@@ -32,12 +32,23 @@ func main() {
 					pushBack(chunks[1], chunks[2])
 					continue
 				}
+
+			case "get":
+				if len(chunks) == 2 {
+					values := get(chunks[1])
+					fmt.Println("Number of values: " + strconv.Itoa(len(values)))
+					for index, value := range values {
+						fmt.Println("Value " + strconv.Itoa(index) + ": " + value)
+					}
+					continue
+				}
 			case "popfront":
 				if len(chunks) == 2 {
 					value := popFront(chunks[1])
 					fmt.Println("Value: " + value)
 					continue
 				}
+
 			case "popback":
 				if len(chunks) == 2 {
 					value := popBack(chunks[1])
@@ -76,6 +87,14 @@ func pushFront(key string, value string) {
 
 func pushBack(key string, value string) {
 	data[key] = append(data[key], value)
+}
+
+func get(key string) (result []string) {
+	_, ok := data[key]
+	if ok {
+		result = data[key]
+	}
+	return
 }
 
 func popFront(key string) (result string) {
