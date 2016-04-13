@@ -42,6 +42,13 @@ func empty(key string) {
 	}
 }
 
+func getKeys() (keys []string) {
+	for k := range data {
+		keys = append(keys, k)
+	}
+	return
+}
+
 func deleteKey(key string) {
 	_, ok := data[key]
 	if ok {
