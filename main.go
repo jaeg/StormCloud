@@ -23,13 +23,29 @@ func main() {
 			chunks[0] = strings.ToLower(chunks[0])
 			switch chunks[0] {
 			case "fpush":
-				if len(chunks) == 3 {
-					pushFront(chunks[1], chunks[2])
+				if len(chunks) >= 3 {
+					newValue := chunks[2]
+					if len(chunks) > 3 {
+						for index, value := range chunks {
+							if index > 2 {
+								newValue += " " + value
+							}
+						}
+					}
+					pushFront(chunks[1], newValue)
 					continue
 				}
 			case "bpush":
-				if len(chunks) == 3 {
-					pushBack(chunks[1], chunks[2])
+				if len(chunks) >= 3 {
+					newValue := chunks[2]
+					if len(chunks) > 3 {
+						for index, value := range chunks {
+							if index > 2 {
+								newValue += " " + value
+							}
+						}
+					}
+					pushBack(chunks[1], newValue)
 					continue
 				}
 
