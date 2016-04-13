@@ -98,14 +98,14 @@ func handleConnection(conn net.Conn) {
 					writeToClient(conn, output)
 					continue
 				}
-			case "popfront":
+			case "fpop":
 				if len(chunks) == 2 {
 					value := popFront(chunks[1])
 					writeToClient(conn, "Value: "+value)
 					continue
 				}
 
-			case "popback":
+			case "bpop":
 				if len(chunks) == 2 {
 					value := popBack(chunks[1])
 					writeToClient(conn, "Value: "+value)
