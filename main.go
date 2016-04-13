@@ -1,19 +1,29 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"strconv"
 	"strings"
 )
 
+type settingsStruct struct {
+	Port string `json:"port"`
+}
+
+var settings = &settingsStruct{Port: "6464"}
+
 var data = make(map[string][]string)
 
 func main() {
+	loadConfig()
 	fmt.Println("StormCloud running")
-	ln, err := net.Listen("tcp", ":6464")
+	fmt.Println("Operating on port " + settings.Port)
+	ln, err := net.Listen("tcp", ":"+settings.Port)
 	if err != nil {
 		fmt.Println("Error opening listener: " + err.Error())
 	}
@@ -23,6 +33,19 @@ func main() {
 			fmt.Println("Error accepting incoming connection: " + err.Error())
 		}
 		go handleConnection(conn)
+	}
+}
+
+func loadConfig() {
+	file, err := ioutil.ReadFile("./config.json")
+	if err != nil {
+		fmt.Println("Unable to load config.json.  Using default settings.")
+		return
+	}
+
+	err = json.Unmarshal(file, &settings)
+	if err != nil {
+		fmt.Println("Error parsing config file: " + err.Error())
 	}
 }
 
