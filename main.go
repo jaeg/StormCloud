@@ -12,10 +12,14 @@ import (
 )
 
 type settingsStruct struct {
-	Port string `json:"port"`
+	Port                string `json:"port"`
+	UseDiskWriter       bool   `json:"usediskwriter"`
+	DiskWriterFrequency int    `json:"diskwriterfrequency"`
+	ReadFromDiskAtStart bool   `json:"readfromdiskatstart"`
 }
 
-var settings = &settingsStruct{Port: "6464"}
+var settings = &settingsStruct{
+	Port: "6464", UseDiskWriter: false, DiskWriterFrequency: 0, ReadFromDiskAtStart: false}
 
 var data = make(map[string][]string)
 
