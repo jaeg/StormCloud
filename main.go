@@ -1,9 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
+	"io"
+	"log"
+	"net"
 	"strconv"
 	"strings"
 )
@@ -12,14 +13,50 @@ var data = make(map[string][]string)
 
 func main() {
 	fmt.Println("StormCloud running")
-	scanner := bufio.NewScanner(os.Stdin)
-	for fmt.Print("StormCloud > "); scanner.Scan(); fmt.Print("StormCloud > ") {
-		line := scanner.Text()
+	ln, err := net.Listen("tcp", ":6464")
+	if err != nil {
+		fmt.Println("Error opening listener: " + err.Error())
+	}
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			fmt.Println("Error accepting incoming connection: " + err.Error())
+		}
+		go handleConnection(conn)
+	}
+}
+
+func writeToClient(conn net.Conn, text string) {
+	_, err := conn.Write([]byte(text))
+	if err != nil {
+		fmt.Println("Error writing to client: " + err.Error())
+	}
+}
+
+func handleConnection(conn net.Conn) {
+	fmt.Println("Client connected")
+	buffer := make([]byte, 81920)
+	for {
+		n, err := conn.Read(buffer)
+		if err != nil {
+			if err != io.EOF {
+				log.Printf("Read error: %s", err)
+			}
+			break
+		}
+		bufferAsString := string(buffer)
+		line := bufferAsString[0:n]
 		if len(line) > 0 {
 			if line == "quit" {
+				writeToClient(conn, "OK")
+				err := conn.Close()
+				if err != nil {
+					fmt.Println("Error disconnecting from client: " + err.Error())
+				}
 				break
 			}
 			chunks := strings.Split(line, " ")
+
 			chunks[0] = strings.ToLower(chunks[0])
 			switch chunks[0] {
 			case "fpush":
@@ -33,6 +70,7 @@ func main() {
 						}
 					}
 					pushFront(chunks[1], newValue)
+					writeToClient(conn, "OK")
 					continue
 				}
 			case "bpush":
@@ -46,55 +84,59 @@ func main() {
 						}
 					}
 					pushBack(chunks[1], newValue)
+					writeToClient(conn, "OK")
 					continue
 				}
 
 			case "get":
 				if len(chunks) == 2 {
 					values := get(chunks[1])
-					fmt.Println("Number of values: " + strconv.Itoa(len(values)))
+					output := "Number of values: " + strconv.Itoa(len(values)) + "\r\n"
 					for index, value := range values {
-						fmt.Println("Value " + strconv.Itoa(index) + ": " + value)
+						output += "Value " + strconv.Itoa(index) + ": " + value + "\r\n"
 					}
+					writeToClient(conn, output)
 					continue
 				}
 			case "popfront":
 				if len(chunks) == 2 {
 					value := popFront(chunks[1])
-					fmt.Println("Value: " + value)
+					writeToClient(conn, "Value: "+value)
 					continue
 				}
 
 			case "popback":
 				if len(chunks) == 2 {
 					value := popBack(chunks[1])
-					fmt.Println("Value: " + value)
+					writeToClient(conn, "Value: "+value)
 					continue
 				}
 			case "keys":
 				keys := getKeys()
-				fmt.Println("Number of Keys: " + strconv.Itoa(len(keys)))
+				output := "Number of keys: " + strconv.Itoa(len(keys)) + "\r\n"
 				for _, key := range keys {
-					fmt.Println(" " + key)
+					output += " " + key + "\r\n"
 				}
+				writeToClient(conn, output)
 				continue
 
 			case "empty":
 				if len(chunks) == 2 {
 					empty(chunks[1])
+					writeToClient(conn, "OK")
 					continue
 				}
 
 			case "deletekey":
 				if len(chunks) == 2 {
 					deleteKey(chunks[1])
+					writeToClient(conn, "OK")
 					continue
 				}
 			}
-			fmt.Println("Syntax Invalid")
+			writeToClient(conn, "Syntax Invalid")
 		}
 	}
-
 }
 
 func pushFront(key string, value string) {
