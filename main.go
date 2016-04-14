@@ -4,7 +4,6 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -99,9 +98,7 @@ func handleConnection(conn net.Conn) {
 	for {
 		n, err := conn.Read(buffer)
 		if err != nil {
-			if err != io.EOF {
-				log.Printf("Read error: %s", err)
-			}
+			log.Printf("Client disconnected. Read error: %s ", err)
 			break
 		}
 		bufferAsString := string(buffer)
@@ -197,6 +194,29 @@ func handleConnection(conn net.Conn) {
 					deleteKey(chunks[1])
 					writeToClient(conn, "OK")
 				}
+			case "loaddata":
+				loadGob()
+				writeToClient(conn, "OK")
+
+			case "savedata":
+				saveDataToGob()
+				writeToClient(conn, "OK")
+
+			case "autosave":
+				if len(chunks) == 2 {
+					if strings.ToLower(chunks[1]) == "false" {
+						settings.UseDiskWriter = false
+						writeToClient(conn, "OK")
+					} else if strings.ToLower(chunks[1]) == "true" {
+						settings.UseDiskWriter = true
+						writeToClient(conn, "OK")
+					} else {
+						writeToClient(conn, "Syntax Invalid")
+					}
+				} else {
+					writeToClient(conn, strconv.FormatBool(settings.UseDiskWriter))
+				}
+
 			default:
 				writeToClient(conn, "Syntax Invalid")
 			}
