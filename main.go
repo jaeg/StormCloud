@@ -57,7 +57,7 @@ func loadConfig() {
 	}
 }
 
-func saveDataToGob() {
+func saveDataToGob() (err error) {
 	gobFile, err := os.Create("data.gob")
 	if err != nil {
 		fmt.Println("Failed to create data.gob: " + err.Error())
@@ -67,9 +67,10 @@ func saveDataToGob() {
 	dataEncoder.Encode(data)
 
 	gobFile.Close()
+	return
 }
 
-func loadGob() {
+func loadGob() (err error) {
 	gobFile, err := os.Open("data.gob")
 	if err != nil {
 		fmt.Println("Failed to load data.gob: " + err.Error())
@@ -83,6 +84,7 @@ func loadGob() {
 	}
 
 	gobFile.Close()
+	return
 }
 
 func writeToClient(conn net.Conn, text string) {
@@ -195,12 +197,20 @@ func handleConnection(conn net.Conn) {
 					writeToClient(conn, "OK")
 				}
 			case "loaddata":
-				loadGob()
-				writeToClient(conn, "OK")
+				err := loadGob()
+				if err != nil {
+					writeToClient(conn, "FAILED")
+				} else {
+					writeToClient(conn, "OK")
+				}
 
 			case "savedata":
-				saveDataToGob()
-				writeToClient(conn, "OK")
+				err := saveDataToGob()
+				if err != nil {
+					writeToClient(conn, "FAILED")
+				} else {
+					writeToClient(conn, "OK")
+				}
 
 			case "autosave":
 				if len(chunks) == 2 {
