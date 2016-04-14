@@ -11,3 +11,15 @@ This is a simplified version of Redis built in Go mostly for my amusement and to
  - **bpop** *key* - Pops a value off the back of the list for the given key
  - **empty** *key* - Empties the key of all its values
  - **deletekey** *key* - Deletes the key and its values
+
+#Configuration
+Example config.json
+```{
+  "port" : "6464",
+  "usediskwriter" : true,
+  "readfromdiskatstart" : true
+}```
+
+- **port** *number* - Port the StormCloud runs on
+- **usediskwriter** *true/false* -  Active storage of StormCloud data to disk.
+- **readfromdiskstart** *true/false* - Automatically load StormCloud data from disk on startup.
