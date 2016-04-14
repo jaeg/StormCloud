@@ -1,26 +1,35 @@
 package main
 
 import (
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 )
 
 type settingsStruct struct {
-	Port string `json:"port"`
+	Port                string `json:"port"`
+	UseDiskWriter       bool   `json:"usediskwriter"`
+	ReadFromDiskAtStart bool   `json:"readfromdiskatstart"`
 }
 
-var settings = &settingsStruct{Port: "6464"}
+var settings = &settingsStruct{
+	Port: "6464", UseDiskWriter: false, ReadFromDiskAtStart: false}
 
 var data = make(map[string][]string)
 
 func main() {
 	loadConfig()
+	if settings.ReadFromDiskAtStart == true {
+		loadGob()
+	}
+
 	fmt.Println("StormCloud running")
 	fmt.Println("Operating on port " + settings.Port)
 	ln, err := net.Listen("tcp", ":"+settings.Port)
@@ -47,6 +56,34 @@ func loadConfig() {
 	if err != nil {
 		fmt.Println("Error parsing config file: " + err.Error())
 	}
+}
+
+func saveDataToGob() {
+	gobFile, err := os.Create("data.gob")
+	if err != nil {
+		fmt.Println("Failed to create data.gob: " + err.Error())
+		return
+	}
+	dataEncoder := gob.NewEncoder(gobFile)
+	dataEncoder.Encode(data)
+
+	gobFile.Close()
+}
+
+func loadGob() {
+	gobFile, err := os.Open("data.gob")
+	if err != nil {
+		fmt.Println("Failed to load data.gob: " + err.Error())
+		return
+	}
+
+	dataDecoder := gob.NewDecoder(gobFile)
+	err = dataDecoder.Decode(&data)
+	if err != nil {
+		fmt.Println("Failed to decode data.gob: " + err.Error())
+	}
+
+	gobFile.Close()
 }
 
 func writeToClient(conn net.Conn, text string) {
@@ -94,7 +131,8 @@ func handleConnection(conn net.Conn) {
 					}
 					pushFront(chunks[1], newValue)
 					writeToClient(conn, "OK")
-					continue
+				} else {
+					writeToClient(conn, "Syntax Invalid")
 				}
 			case "bpush":
 				if len(chunks) >= 3 {
@@ -108,7 +146,8 @@ func handleConnection(conn net.Conn) {
 					}
 					pushBack(chunks[1], newValue)
 					writeToClient(conn, "OK")
-					continue
+				} else {
+					writeToClient(conn, "Syntax Invalid")
 				}
 
 			case "get":
@@ -119,20 +158,23 @@ func handleConnection(conn net.Conn) {
 						output += "Value " + strconv.Itoa(index) + ": " + value + "\r\n"
 					}
 					writeToClient(conn, output)
-					continue
+				} else {
+					writeToClient(conn, "Syntax Invalid")
 				}
 			case "fpop":
 				if len(chunks) == 2 {
 					value := popFront(chunks[1])
 					writeToClient(conn, "Value: "+value)
-					continue
+				} else {
+					writeToClient(conn, "Syntax Invalid")
 				}
 
 			case "bpop":
 				if len(chunks) == 2 {
 					value := popBack(chunks[1])
 					writeToClient(conn, "Value: "+value)
-					continue
+				} else {
+					writeToClient(conn, "Syntax Invalid")
 				}
 			case "keys":
 				keys := getKeys()
@@ -141,23 +183,26 @@ func handleConnection(conn net.Conn) {
 					output += " " + key + "\r\n"
 				}
 				writeToClient(conn, output)
-				continue
 
 			case "empty":
 				if len(chunks) == 2 {
 					empty(chunks[1])
 					writeToClient(conn, "OK")
-					continue
+				} else {
+					writeToClient(conn, "Syntax Invalid")
 				}
 
 			case "deletekey":
 				if len(chunks) == 2 {
 					deleteKey(chunks[1])
 					writeToClient(conn, "OK")
-					continue
 				}
+			default:
+				writeToClient(conn, "Syntax Invalid")
 			}
-			writeToClient(conn, "Syntax Invalid")
+			if settings.UseDiskWriter == true {
+				saveDataToGob()
+			}
 		}
 	}
 }
