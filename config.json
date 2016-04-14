@@ -1,6 +1,5 @@
 {
-  "port" : "1234",
-  "usediskwriter" : false,
-  "diskwriterfrequency" : 0,
-  "readfromdiskatstart" : false
+  "port" : "6464",
+  "usediskwriter" : true,
+  "readfromdiskatstart" : true
 }
