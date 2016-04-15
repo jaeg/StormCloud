@@ -176,7 +176,11 @@ func handleConnection(conn net.Conn) {
 					writeToClient(conn, "Syntax Invalid")
 				}
 			case "keys":
-				keys := getKeys()
+				search := ""
+				if len(chunks) >= 2 {
+					search = chunks[1]
+				}
+				keys := getKeys(search)
 				output := "Number of keys: " + strconv.Itoa(len(keys)) + "\r\n"
 				for _, key := range keys {
 					output += " " + key + "\r\n"
@@ -276,9 +280,11 @@ func empty(key string) {
 	}
 }
 
-func getKeys() (keys []string) {
+func getKeys(search string) (keys []string) {
 	for k := range data {
-		keys = append(keys, k)
+		if strings.Contains(k, search) {
+			keys = append(keys, k)
+		}
 	}
 	return
 }

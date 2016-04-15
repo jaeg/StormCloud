@@ -43,8 +43,15 @@ func TestEmpty(t *testing.T) {
 }
 
 func TestGetKeys(t *testing.T) {
-	keys := getKeys()
+	keys := getKeys("")
 	if len(keys) == 0 {
+		t.Error("GetKeys test failed")
+	}
+}
+
+func TestGetKeysSearch(t *testing.T) {
+	keys := getKeys("ont")
+	if len(keys) != 1 {
 		t.Error("GetKeys test failed")
 	}
 }
