@@ -26,7 +26,7 @@ Example config.json
  - **fpush** *key* *value* - Pushes to the front of the list for the given key
  - **bpush** *key* *value* - Pushes to the back of the list for the given key
  - **get** *key* - Gets all the values for the key
- - **keys** - Gets all the keys stored in the system
+ - **keys** *search term* - Gets all the keys stored in the system.  If a search term is provided it'll return only the results that contain the term.
  - **fpop** *key* - Pops a value off the front of the list for the given key
  - **bpop** *key* - Pops a value off the back of the list for the given key
  - **empty** *key* - Empties the key of all its values
