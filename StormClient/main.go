@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -9,11 +10,14 @@ import (
 	"os"
 )
 
-func main() {
-	fmt.Println("Storm Client")
+var ip = flag.String("ip", "localhost", "Location of StormCloud server.  DEFAULT: localhost")
+var port = flag.String("port", "6464", "Port for StormCloud server.  DEFAULT: 6464")
 
-	fmt.Println("Connecting to localhost:6464")
-	conn, err := net.Dial("tcp", "localhost:6464")
+func main() {
+	flag.Parse()
+	fmt.Println("Storm Client")
+	fmt.Println("Connecting to " + *ip + ":" + *port)
+	conn, err := net.Dial("tcp", *ip+":"+*port)
 	if err != nil {
 		fmt.Println("Error connecting to the Storm Cloud. " + err.Error())
 		return
