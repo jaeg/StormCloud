@@ -260,7 +260,10 @@ func get(key string) (result []string) {
 func popFront(key string) (result string) {
 	_, ok := data[key]
 	if ok {
-		result, data[key] = data[key][0], data[key][:0]
+		if len(data[key]) > 0 {
+			result = data[key][0]
+			data[key] = append(data[key][:0], data[key][1:]...)
+		}
 	}
 	return
 }
@@ -268,7 +271,9 @@ func popFront(key string) (result string) {
 func popBack(key string) (result string) {
 	_, ok := data[key]
 	if ok {
-		result, data[key] = data[key][len(data[key])-1], data[key][:len(data[key])-1]
+		if len(data[key]) > 0 {
+			result, data[key] = data[key][len(data[key])-1], data[key][:len(data[key])-1]
+		}
 	}
 	return
 }
