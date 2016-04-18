@@ -87,7 +87,7 @@ func loadGob() (err error) {
 	return
 }
 
-func writeToClient(conn net.Conn, text string) {
+func writeToClient(conn net.Conn, text []byte) {
 	_, err := conn.Write([]byte(text))
 	if err != nil {
 		fmt.Println("Error writing to client: " + err.Error())
@@ -107,7 +107,7 @@ func handleConnection(conn net.Conn) {
 		line := bufferAsString[0:n]
 		if len(line) > 0 {
 			if line == "quit" {
-				writeToClient(conn, "OK")
+				writeToClient(conn, []byte("OK"))
 				err := conn.Close()
 				if err != nil {
 					fmt.Println("Error disconnecting from client: " + err.Error())
@@ -129,9 +129,9 @@ func handleConnection(conn net.Conn) {
 						}
 					}
 					pushFront(chunks[1], newValue)
-					writeToClient(conn, "OK")
+					writeToClient(conn, []byte("OK"))
 				} else {
-					writeToClient(conn, "Syntax Invalid")
+					writeToClient(conn, []byte("SYNTAX INVALID"))
 				}
 			case "bpush":
 				if len(chunks) >= 3 {
@@ -144,36 +144,47 @@ func handleConnection(conn net.Conn) {
 						}
 					}
 					pushBack(chunks[1], newValue)
-					writeToClient(conn, "OK")
+					writeToClient(conn, []byte("OK"))
 				} else {
-					writeToClient(conn, "Syntax Invalid")
+					writeToClient(conn, []byte("SYNTAX INVALID"))
 				}
 
 			case "get":
 				if len(chunks) == 2 {
 					values := get(chunks[1])
-					output := "Number of values: " + strconv.Itoa(len(values)) + "\r\n"
-					for index, value := range values {
-						output += "Value " + strconv.Itoa(index) + ": " + value + "\r\n"
+					output, err := json.Marshal(values)
+					if err != nil {
+						writeToClient(conn, []byte("FAIL"))
+					} else {
+						writeToClient(conn, output)
 					}
-					writeToClient(conn, output)
 				} else {
-					writeToClient(conn, "Syntax Invalid")
+					writeToClient(conn, []byte("SYNTAX INVALID"))
 				}
 			case "fpop":
 				if len(chunks) == 2 {
 					value := popFront(chunks[1])
-					writeToClient(conn, "Value: "+value)
+					output, err := json.Marshal(value)
+					if err != nil {
+						writeToClient(conn, []byte("FAIL"))
+					} else {
+						writeToClient(conn, output)
+					}
 				} else {
-					writeToClient(conn, "Syntax Invalid")
+					writeToClient(conn, []byte("SYNTAX INVALID"))
 				}
 
 			case "bpop":
 				if len(chunks) == 2 {
 					value := popBack(chunks[1])
-					writeToClient(conn, "Value: "+value)
+					output, err := json.Marshal(value)
+					if err != nil {
+						writeToClient(conn, []byte("FAIL"))
+					} else {
+						writeToClient(conn, output)
+					}
 				} else {
-					writeToClient(conn, "Syntax Invalid")
+					writeToClient(conn, []byte("SYNTAX INVALID"))
 				}
 			case "keys":
 				search := ""
@@ -181,58 +192,64 @@ func handleConnection(conn net.Conn) {
 					search = chunks[1]
 				}
 				keys := getKeys(search)
-				output := "Number of keys: " + strconv.Itoa(len(keys)) + "\r\n"
-				for _, key := range keys {
-					output += " " + key + "\r\n"
+				output, err := json.Marshal(keys)
+				if err != nil {
+					writeToClient(conn, []byte("FAIL"))
+				} else {
+					writeToClient(conn, output)
 				}
-				writeToClient(conn, output)
 
 			case "empty":
 				if len(chunks) == 2 {
 					empty(chunks[1])
-					writeToClient(conn, "OK")
+					writeToClient(conn, []byte("OK"))
 				} else {
-					writeToClient(conn, "Syntax Invalid")
+					writeToClient(conn, []byte("SYNTAX INVALID"))
 				}
 
 			case "deletekey":
 				if len(chunks) == 2 {
 					deleteKey(chunks[1])
-					writeToClient(conn, "OK")
+					writeToClient(conn, []byte("OK"))
 				}
 			case "loaddata":
 				err := loadGob()
 				if err != nil {
-					writeToClient(conn, "FAILED")
+					writeToClient(conn, []byte("FAIL"))
 				} else {
-					writeToClient(conn, "OK")
+					writeToClient(conn, []byte("OK"))
 				}
 
 			case "savedata":
 				err := saveDataToGob()
 				if err != nil {
-					writeToClient(conn, "FAILED")
+					writeToClient(conn, []byte("FAIL"))
 				} else {
-					writeToClient(conn, "OK")
+					writeToClient(conn, []byte("OK"))
 				}
 
 			case "autosave":
 				if len(chunks) == 2 {
 					if strings.ToLower(chunks[1]) == "false" {
 						settings.UseDiskWriter = false
-						writeToClient(conn, "OK")
+						writeToClient(conn, []byte("OK"))
 					} else if strings.ToLower(chunks[1]) == "true" {
 						settings.UseDiskWriter = true
-						writeToClient(conn, "OK")
+						writeToClient(conn, []byte("OK"))
 					} else {
-						writeToClient(conn, "Syntax Invalid")
+						writeToClient(conn, []byte("SYNTAX INVALID"))
 					}
 				} else {
-					writeToClient(conn, strconv.FormatBool(settings.UseDiskWriter))
+					output, err := json.Marshal(strconv.FormatBool(settings.UseDiskWriter))
+					if err != nil {
+						writeToClient(conn, []byte("FAIL"))
+					} else {
+						writeToClient(conn, output)
+					}
 				}
 
 			default:
-				writeToClient(conn, "Syntax Invalid")
+				writeToClient(conn, []byte("SYNTAX INVALID"))
 			}
 			if settings.UseDiskWriter == true {
 				saveDataToGob()
